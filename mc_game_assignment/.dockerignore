@@ -1,0 +1,18 @@
+# .dockerignore
+
+# Exclude local dependencies, let Docker handle it
+node_modules
+
+# Exclude Git history
+.git
+
+# Exclude local environment files
+.env
+
+# Exclude Docker files
+Dockerfile
+.dockerignore
+
+# Exclude logs
+*.log
+npm-debug.log

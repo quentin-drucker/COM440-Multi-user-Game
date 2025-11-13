@@ -1,31 +1,142 @@
 <!DOCTYPE html>
 <html>
-<head><meta charset="utf-8"><title>Login</title></head>
+<head>
+    <meta charset="utf-8">
+    <title>Login</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #ffd700 0%, #ffed4e 50%, #9b59b6 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .login-container {
+            background: white;
+            padding: 40px 50px;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            text-align: center;
+            max-width: 400px;
+            width: 90%;
+        }
+
+        h1 {
+            color: #9b59b6;
+            margin-bottom: 30px;
+            font-size: 2em;
+            text-shadow: 2px 2px 4px rgba(255, 215, 0, 0.3);
+        }
+
+        form {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        label {
+            text-align: left;
+            color: #333;
+            font-weight: 600;
+            font-size: 0.95em;
+        }
+
+        input[type="text"],
+        input[type="password"] {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #ffd700;
+            border-radius: 10px;
+            font-size: 1em;
+            font-family: inherit;
+            transition: all 0.3s ease;
+            margin-top: 5px;
+        }
+
+        input[type="text"]:focus,
+        input[type="password"]:focus {
+            outline: none;
+            border-color: #9b59b6;
+            box-shadow: 0 0 10px rgba(155, 89, 182, 0.3);
+        }
+
+        button {
+            background: linear-gradient(135deg, #ffd700 0%, #ffed4e 100%);
+            color: #333;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 10px;
+            font-size: 1.1em;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-top: 10px;
+            box-shadow: 0 4px 15px rgba(255, 215, 0, 0.4);
+        }
+
+        button:hover {
+            background: linear-gradient(135deg, #9b59b6 0%, #8e44ad 100%);
+            color: white;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(155, 89, 182, 0.4);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        .error-message {
+            color: #e74c3c;
+            font-weight: 600;
+            margin-top: 15px;
+            padding: 10px;
+            background: #ffe6e6;
+            border-radius: 8px;
+            display: none;
+        }
+
+        .error-message.show {
+            display: block;
+        }
+    </style>
+</head>
 <body>
-  <h1>Please Login</h1>
-  <form action="/login" method="POST">
-      <label>
-      First Name:
-      <input type="text" id="name" name="name" required />
-      </label><br />
+    <div class="login-container">
+        <h1>🎮 Game Login</h1>
+        <form action="/login" method="POST">
+            <label>
+                First Name:
+                <input type="text" id="name" name="name" required />
+            </label>
 
-      <label>
-          Password:
-          <input type="password" name="password" placeholder="Password" required autofocus>
-      </label><br />
+            <label>
+                Password:
+                <input type="password" name="password" placeholder="Enter password" required autofocus>
+            </label>
 
-      <button type="submit" onclick="
-        sessionStorage.setItem('mySessionName', document.getElementById('name').value);">
-        Enter
-      </button>
-  </form>
-  <p style="color:red;">
-    <!-- show error if ?error=1 -->
+            <button type="submit" onclick="
+                sessionStorage.setItem('mySessionName', document.getElementById('name').value);">
+                Enter Game
+            </button>
+        </form>
+        
+        <p class="error-message" id="errorMsg">
+            ❌ Incorrect password. Please try again.
+        </p>
+    </div>
+
     <script>
-      if (new URLSearchParams(window.location.search).has('error')) {
-        document.write('Incorrect password');
-      }
+        if (new URLSearchParams(window.location.search).has('error')) {
+            document.getElementById('errorMsg').classList.add('show');
+        }
     </script>
-  </p>
 </body>
 </html>

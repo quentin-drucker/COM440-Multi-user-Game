@@ -24,13 +24,13 @@ io.on('connection', (socket) => {
     console.log('In Connection');
     const { token } = socket.handshake.auth;
     
-    if ( token === "_"){
+    if (token === "_") {
         console.log("This user is not logged in - not adding.");
         return;
     }    
     
-    if (typeof token === "undefined"){
-        console.log("Connection NOT established -  undefined token");
+    if (typeof token === "undefined") {
+        console.log("Connection NOT established - undefined token");
         return;
     }
         
@@ -39,8 +39,15 @@ io.on('connection', (socket) => {
     
     const color = '#1133CC';
     const color2 = '#FF1122';
-    players[id] = { id, x: Math.floor(Math.random()*600), y: Math.floor(Math.random()*400), color,
-                    name: token, health: 100};
+    players[id] = { 
+        id, 
+        x: Math.floor(Math.random() * 600), 
+        y: Math.floor(Math.random() * 400), 
+        color,
+        name: token, 
+        health: 100,
+        alive: true  // NEW: track if player is alive
+    };
 
     // Send the current state and current set of players to client
     socket.emit('init', { id, players });
@@ -50,38 +57,56 @@ io.on('connection', (socket) => {
 
     // Client has moved, update state and let everyone know
     socket.on('move', ({ x, y }) => {
-        if (players[id]) {
+        if (players[id] && players[id].alive) {  // Only allow movement if alive
+            // Check canvas boundaries (assuming 800x600 canvas)
+            const hitEdge = (x <= 20 || x >= 780 || y <= 20 || y >= 580);
+            
+            if (hitEdge && players[id].health > 0) {
+                // Lose 20% of current health when hitting edge
+                players[id].health = Math.max(0, players[id].health * 0.8);
+                
+                // Check if player died from edge collision
+                if (players[id].health <= 0) {
+                    players[id].alive = false;
+                }
+            }
+            
             players[id].x = x;
             players[id].y = y;
-            io.emit('move', { id, x, y });  // send to all clients
+            io.emit('move', { id, x, y });
         }
     });
-    
-    // 'jump' event is receieved when user clicks mouse (see the client-side JavaScript)
-    socket.on('jump', ({ xy }) => {
-        if (players[id]){
-            players[id].y += xy;
-        } 
-    });
+
+socket.on('hitEdge', () => {
+    if (players[id] && players[id].alive && players[id].health > 0) {
+        // Lose 20% of current health when hitting edge
+        players[id].health = Math.max(0, players[id].health * 0.8);
+        
+        // Check if player died from edge collision
+        if (players[id].health <= 0) {
+            players[id].alive = false;
+        }
+        
+        console.log(`Player ${players[id].name} hit edge, health now: ${players[id].health}`);
+    }
+});
     
     // Every quarter second, broadcast an update to ALL clients
     let counter = 0;
 
-    if(!intervalId){
-    intervalId = setInterval(() => {
-        for (const id in players){
-            players[id].health -= .1; // Constantly depleting health
-            if( players[id].health <= 0 )
-                players[id].health = 0;
-
-            if( counter++ > 3 ){ // toggle color periodically
-                players[id].color = (players[id].color === color) ? color2 : color;
-                counter = 0;
+    if (!intervalId) {
+        intervalId = setInterval(() => {
+            for (const id in players) {
+                // REMOVED: constant health depletion
+                
+                if (counter++ > 3) { // toggle color periodically
+                    players[id].color = (players[id].color === color) ? color2 : color;
+                    counter = 0;
+                }
             }
-        }
-        io.emit('update', { players });     // to all clients
-    }, 250);    
-}
+            io.emit('update', { players });
+        }, 250);    
+    }
     
     socket.on('disconnect', () => {
         clearInterval(intervalId);

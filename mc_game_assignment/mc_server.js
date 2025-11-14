@@ -110,6 +110,50 @@ socket.on('hitEdge', () => {
         }, 250);    
     }
     
+    // [NEW] handle sumo bumps (one player pushing another)
+    socket.on('bump', ({ targetId, impulseX, impulseY }) => {
+        const target = players[targetId];
+        const bumper = players[id];
+
+        // Only apply if both still exist and are alive
+        if (!target || !bumper || !target.alive || !bumper.alive) return;
+
+        // Apply impulse to target's position
+        target.x += impulseX;
+        target.y += impulseY;
+
+        // Clamp target back into arena bounds (same margins as client)
+        const minX = 20;
+        const maxX = 780;
+        const minY = 20;
+        const maxY = 580;
+
+        target.x = Math.max(minX, Math.min(maxX, target.x));
+        target.y = Math.max(minY, Math.min(maxY, target.y));
+
+        // Check if the bump pushed them into the edge (causing damage)
+        const hitEdge =
+            target.x <= minX || target.x >= maxX ||
+            target.y <= minY || target.y >= maxY;
+
+        if (hitEdge && target.health > 0) {
+            // Same 20% health loss as moving into wall
+            target.health = target.health * 0.8;
+
+            if (target.health <= 1) {
+                target.health = 0;
+                target.alive = false;
+            }
+
+            console.log(`Player ${target.name} bumped into edge, health now: ${target.health}`);
+        }
+
+        // Broadcast updated position immediately
+        io.emit('move', { id: targetId, x: target.x, y: target.y });
+        // (health/alive will go out on the next 'update' tick)
+    });
+
+
     socket.on('disconnect', () => {
         clearInterval(intervalId);
         intervalId = null;

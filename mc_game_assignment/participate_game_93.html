@@ -64,7 +64,10 @@
     <div class="game-container">
         <canvas id="game" width="800" height="600"></canvas>
         <div class="controls">
-            <strong>Controls:</strong> Use <strong>W A S D</strong> to move | Click to jump
+            <strong>Goal:</strong> Try to knock everyone out!
+        </div>
+        <div class="controls">
+            <strong>Controls:</strong> Press your <strong>W A S D</strong> keys to move your player.
         </div>
     </div>
 
@@ -84,11 +87,16 @@
     const keys = { w: false, a: false, s: false, d: false };
     const velocity = { x: 0, y: 0 };
     const ACCELERATION = 0.5;
-    const MAX_SPEED = 8;
+    const MAX_SPEED = 12;
+    const BOUNCE_SPEED = MAX_SPEED * 2;  // [NEW]: strong 'push' away from wall (for player on contact with wall)
     const FRICTION = 0.85;
     // Sumo tuning
     const PLAYER_RADIUS = 20;     // matches the circle radius used in draw()
     const ARENA_MARGIN = 20;      // same margin used in hitEdge checks
+    const BUMP_POWER = 40;          // how hard you shove others
+    const BUMP_COOLDOWN_MS = 150;   // min time between bumps on same target
+    const lastBumpTime = {};        // targetId -> last bump timestamp
+
     let endMessage = null;        // set when round ends
     let roundStarted = false;     // becomes true once >= 2 players are alive at once
 
@@ -159,34 +167,46 @@
     // REMOVED: canvas click event (no more jump)
 
 
-    // [NEW] helper function -- Push the local player away from others if overlapping (sumo bump)
+    // [NEW] helper function -- Push other players away when we collide (and recoil a bit ourselves)
     function resolvePlayerCollisions(me) {
         const minDist = PLAYER_RADIUS * 2;
 
         for (const id in players) {
-            if (id === playerId) continue;        // skip myself
+            if (id === playerId) continue;
             const other = players[id];
-            if (!other || !other.alive) continue; // only bump alive players
+            if (!other || !other.alive) continue;
 
-            const dx = me.x - other.x;
-            const dy = me.y - other.y;
+            // Vector from me → other
+            const dx = other.x - me.x;
+            const dy = other.y - me.y;
             const dist = Math.sqrt(dx * dx + dy * dy);
 
-            // If circles overlap
             if (dist > 0 && dist < minDist) {
-                const overlap = minDist - dist;
+                const now = Date.now();
+                if (lastBumpTime[id] && now - lastBumpTime[id] < BUMP_COOLDOWN_MS) {
+                    // Recently bumped this same player; skip to avoid spam
+                    continue;
+                }
+                lastBumpTime[id] = now;
 
-                // Normalize direction from other → me
-                const nx = dx / dist;
+                const overlap = minDist - dist;
+                const nx = dx / dist;   // unit vector from me to other
                 const ny = dy / dist;
 
-                // Push me out of overlap
-                me.x += nx * overlap;
-                me.y += ny * overlap;
+                // Slightly separate myself so we don't visually overlap
+                me.x -= nx * overlap * 0.5;
+                me.y -= ny * overlap * 0.5;
 
-                // Small extra knockback to my velocity
-                velocity.x += nx * 0.4;
-                velocity.y += ny * 0.4;
+                // Recoil me a bit in opposite direction
+                velocity.x -= nx * BUMP_POWER * 0.3;
+                velocity.y -= ny * BUMP_POWER * 0.3;
+
+                // Tell the server to shove the OTHER player away from me
+                socket.emit('bump', {
+                    targetId: id,
+                    impulseX: nx * BUMP_POWER,
+                    impulseY: ny * BUMP_POWER
+                });
             }
         }
     }
@@ -198,21 +218,21 @@
         // Check each side individually to flip correct velocity component
         if (me.x <= ARENA_MARGIN) {
             me.x = ARENA_MARGIN;
-            velocity.x = Math.abs(velocity.x);   // push to the right
+            velocity.x = BOUNCE_SPEED;     // push to the right
             bounced = true;
         } else if (me.x >= canvas.width - ARENA_MARGIN) {
             me.x = canvas.width - ARENA_MARGIN;
-            velocity.x = -Math.abs(velocity.x);  // push to the left
+            velocity.x = -BOUNCE_SPEED;    // push to the left
             bounced = true;
         }
 
         if (me.y <= ARENA_MARGIN) {
             me.y = ARENA_MARGIN;
-            velocity.y = Math.abs(velocity.y);   // push down
+            velocity.y = BOUNCE_SPEED;     // push down
             bounced = true;
         } else if (me.y >= canvas.height - ARENA_MARGIN) {
             me.y = canvas.height - ARENA_MARGIN;
-            velocity.y = -Math.abs(velocity.y);  // push up
+            velocity.y = -BOUNCE_SPEED;    // push up
             bounced = true;
         }
 

@@ -86,6 +86,12 @@
     const ACCELERATION = 0.5;
     const MAX_SPEED = 8;
     const FRICTION = 0.85;
+    // Sumo tuning
+    const PLAYER_RADIUS = 20;     // matches the circle radius used in draw()
+    const ARENA_MARGIN = 20;      // same margin used in hitEdge checks
+    let endMessage = null;        // set when round ends
+
+
 
     socket.on('init', ({ id, players: allPlayers }) => {
         playerId = id;

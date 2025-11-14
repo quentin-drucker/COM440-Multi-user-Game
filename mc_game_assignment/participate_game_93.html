@@ -90,6 +90,8 @@
     const PLAYER_RADIUS = 20;     // matches the circle radius used in draw()
     const ARENA_MARGIN = 20;      // same margin used in hitEdge checks
     let endMessage = null;        // set when round ends
+    let roundStarted = false;     // becomes true once >= 2 players are alive at once
+
 
 
 
@@ -113,15 +115,25 @@
     });
 
     socket.on('update', ({ players: allPlayers }) => {
+    // for (const id in allPlayers) {
+    //     if (!players[id]) {
+    //         players[id] = {};  // Initialize if doesn't exist
+    //     }
+    //     players[id].x = allPlayers[id].x;
+    //     players[id].y = allPlayers[id].y;
+    //     players[id].health = allPlayers[id].health;
+    //     players[id].color = allPlayers[id].color;
+    //     players[id].alive = allPlayers[id].alive !== undefined ? allPlayers[id].alive : true;  // Default to true
+    // }
     for (const id in allPlayers) {
-        if (!players[id]) {
-            players[id] = {};  // Initialize if doesn't exist
+        players[id] = { ...allPlayers[id] };
+    }
+
+    // Remove any players that no longer exist on server
+    for (const id in players) {
+        if (!allPlayers[id]) {
+            delete players[id];
         }
-        players[id].x = allPlayers[id].x;
-        players[id].y = allPlayers[id].y;
-        players[id].health = allPlayers[id].health;
-        players[id].color = allPlayers[id].color;
-        players[id].alive = allPlayers[id].alive !== undefined ? allPlayers[id].alive : true;  // Default to true
     }
 });
       
@@ -146,9 +158,81 @@
 
     // REMOVED: canvas click event (no more jump)
 
+
+    // [NEW] helper function -- Push the local player away from others if overlapping (sumo bump)
+    function resolvePlayerCollisions(me) {
+        const minDist = PLAYER_RADIUS * 2;
+
+        for (const id in players) {
+            if (id === playerId) continue;        // skip myself
+            const other = players[id];
+            if (!other || !other.alive) continue; // only bump alive players
+
+            const dx = me.x - other.x;
+            const dy = me.y - other.y;
+            const dist = Math.sqrt(dx * dx + dy * dy);
+
+            // If circles overlap
+            if (dist > 0 && dist < minDist) {
+                const overlap = minDist - dist;
+
+                // Normalize direction from other → me
+                const nx = dx / dist;
+                const ny = dy / dist;
+
+                // Push me out of overlap
+                me.x += nx * overlap;
+                me.y += ny * overlap;
+
+                // Small extra knockback to my velocity
+                velocity.x += nx * 0.4;
+                velocity.y += ny * 0.4;
+            }
+        }
+    }
+
+    // [NEW] helper function
+    function handleWallBounce(me) {
+        let bounced = false;
+
+        // Check each side individually to flip correct velocity component
+        if (me.x <= ARENA_MARGIN) {
+            me.x = ARENA_MARGIN;
+            velocity.x = Math.abs(velocity.x);   // push to the right
+            bounced = true;
+        } else if (me.x >= canvas.width - ARENA_MARGIN) {
+            me.x = canvas.width - ARENA_MARGIN;
+            velocity.x = -Math.abs(velocity.x);  // push to the left
+            bounced = true;
+        }
+
+        if (me.y <= ARENA_MARGIN) {
+            me.y = ARENA_MARGIN;
+            velocity.y = Math.abs(velocity.y);   // push down
+            bounced = true;
+        } else if (me.y >= canvas.height - ARENA_MARGIN) {
+            me.y = canvas.height - ARENA_MARGIN;
+            velocity.y = -Math.abs(velocity.y);  // push up
+            bounced = true;
+        }
+
+        if (bounced) {
+            // Tell server so it can reduce health
+            socket.emit('hitEdge');
+        }
+    }
+
+
     function updateMovement() {
     const me = players[playerId];
-    if (!me || !me.alive) return;
+    if (!me) return;
+
+    // [NEW] If dead, stop velocity + don't move
+    if (!me.alive) {
+        velocity.x = 0;
+        velocity.y = 0;
+        return;
+    }
 
     // Apply acceleration based on keys held
     if (keys.w) velocity.y -= ACCELERATION;
@@ -178,13 +262,16 @@
                      me.y <= 20 || me.y >= canvas.height - 20);
     
     if (hitEdge) {
-        // Notify server of edge collision
-        socket.emit('hitEdge');
+        // // Notify server of edge collision
+        // socket.emit('hitEdge');
+        handleWallBounce(me); // [NEW] -- calls above helper function
     }
 
     // NOW clamp to bounds
     me.x = Math.max(20, Math.min(canvas.width - 20, me.x));
     me.y = Math.max(20, Math.min(canvas.height - 20, me.y));
+
+    resolvePlayerCollisions(me); // [NEW] -- calls above helper function
 
     // Send position to server
     socket.emit('move', { x: me.x, y: me.y });
@@ -192,7 +279,39 @@
 
     // Call movement update every frame
     setInterval(updateMovement, 1000 / 60); // 60 FPS
-      
+    
+
+    // [NEW] -- helper function (Triggers the 'Everyone was eliminated!' text when only 1 player remains)
+    function updateEndState() {
+        const alivePlayers = [];
+        for (const id in players) {
+            const p = players[id];
+            if (p && p.alive) alivePlayers.push(p);
+        }
+
+        // If we haven't officially "started" the round yet, see if we now have >= 2 players
+        if (!roundStarted && alivePlayers.length >= 2) {
+            roundStarted = true;
+        }
+
+        // If game already ended or round hasn't really started, don't show any message
+        if (endMessage || !roundStarted) return;
+
+        // Only once a round has started do we look for a winner
+        if (alivePlayers.length <= 1) {
+            if (alivePlayers.length === 0) {
+                endMessage = "Everyone was eliminated!";
+            } else if (alivePlayers[0].id === playerId) {
+                endMessage = "You win!";
+            } else {
+                endMessage = `${alivePlayers[0].name} wins`;
+            }
+        }
+    }
+
+
+
+
     function draw() {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         
@@ -283,8 +402,28 @@
             }
         }
         
+        // [NEW] After drawing everyone, check if the round is over
+        updateEndState();
+
+        if (endMessage) {
+            // Dark overlay
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Centered message
+            ctx.font = "bold 48px 'Segoe UI'";
+            ctx.fillStyle = '#ffffff';
+            ctx.textAlign = 'center';
+            ctx.fillText(endMessage, canvas.width / 2, canvas.height / 2);
+
+            // Stop animating positions after the round ends
+            return;
+        }
+        
+
         requestAnimationFrame(draw);
     }
+
 
     function adjustColor(color, amount) {
         const num = parseInt(color.replace("#",""), 16);

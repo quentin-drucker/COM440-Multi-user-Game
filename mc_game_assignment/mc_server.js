@@ -63,10 +63,11 @@ io.on('connection', (socket) => {
             
             if (hitEdge && players[id].health > 0) {
                 // Lose 20% of current health when hitting edge
-                players[id].health = Math.max(0, players[id].health * 0.8);
-                
-                // Check if player died from edge collision
-                if (players[id].health <= 0) {
+                players[id].health = players[id].health * 0.8;
+
+                // If very low, snap to 0 and mark dead
+                if (players[id].health <= 1) {   // treat <=1% as dead
+                    players[id].health = 0;
                     players[id].alive = false;
                 }
             }
@@ -80,13 +81,14 @@ io.on('connection', (socket) => {
 socket.on('hitEdge', () => {
     if (players[id] && players[id].alive && players[id].health > 0) {
         // Lose 20% of current health when hitting edge
-        players[id].health = Math.max(0, players[id].health * 0.8);
-        
-        // Check if player died from edge collision
-        if (players[id].health <= 0) {
+        players[id].health = players[id].health * 0.8;
+
+        // If very low, snap to 0 and mark dead
+        if (players[id].health <= 1) {   // treat <=1% as dead
+            players[id].health = 0;
             players[id].alive = false;
         }
-        
+
         console.log(`Player ${players[id].name} hit edge, health now: ${players[id].health}`);
     }
 });

@@ -123,25 +123,21 @@
     });
 
     socket.on('update', ({ players: allPlayers }) => {
-    // for (const id in allPlayers) {
-    //     if (!players[id]) {
-    //         players[id] = {};  // Initialize if doesn't exist
-    //     }
-    //     players[id].x = allPlayers[id].x;
-    //     players[id].y = allPlayers[id].y;
-    //     players[id].health = allPlayers[id].health;
-    //     players[id].color = allPlayers[id].color;
-    //     players[id].alive = allPlayers[id].alive !== undefined ? allPlayers[id].alive : true;  // Default to true
-    // }
     for (const id in allPlayers) {
-        players[id] = { ...allPlayers[id] };
-    }
-
-    // Remove any players that no longer exist on server
-    for (const id in players) {
-        if (!allPlayers[id]) {
-            delete players[id];
+        if (!players[id]) {
+            players[id] = {};
         }
+        
+        // Only update position for OTHER players, not yourself
+        if (id !== playerId) {
+            players[id].x = allPlayers[id].x;
+            players[id].y = allPlayers[id].y;
+        }
+        
+        // Always update these properties for everyone (including yourself)
+        players[id].health = allPlayers[id].health;
+        players[id].color = allPlayers[id].color;
+        players[id].alive = allPlayers[id].alive !== undefined ? allPlayers[id].alive : true;
     }
 });
       

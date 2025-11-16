@@ -57,26 +57,24 @@ io.on('connection', (socket) => {
 
     // Client has moved, update state and let everyone know
     socket.on('move', ({ x, y }) => {
-        if (players[id] && players[id].alive) {  // Only allow movement if alive
-            // Check canvas boundaries (assuming 800x600 canvas)
-            const hitEdge = (x <= 20 || x >= 780 || y <= 20 || y >= 580);
+    if (players[id] && players[id].alive) {
+        const hitEdge = (x <= 20 || x >= 780 || y <= 20 || y >= 580);
+        
+        if (hitEdge && players[id].health > 0) {
+            // Lose 20 health when hitting edge (flat damage)
+            players[id].health = Math.max(0, players[id].health - 20);
             
-            if (hitEdge && players[id].health > 0) {
-                // Lose 20% of current health when hitting edge
-                players[id].health = players[id].health * 0.8;
-
-                // If very low, snap to 0 and mark dead
-                if (players[id].health <= 1) {   // treat <=1% as dead
-                    players[id].health = 0;
-                    players[id].alive = false;
-                }
+            // Check if player died from edge collision
+            if (players[id].health <= 0) {
+                players[id].alive = false;
             }
-            
-            players[id].x = x;
-            players[id].y = y;
-            io.emit('move', { id, x, y });
         }
-    });
+        
+        players[id].x = x;
+        players[id].y = y;
+        socket.broadcast.emit('move', { id, x, y });  // Note: should be broadcast, not io.emit
+    }
+});
 
 socket.on('hitEdge', () => {
     if (players[id] && players[id].alive && players[id].health > 0) {

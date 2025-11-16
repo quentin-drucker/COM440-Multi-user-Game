@@ -158,18 +158,30 @@
     </div>
 
     <script>
+        // Show error if password wrong
         if (new URLSearchParams(window.location.search).has('error')) {
             document.getElementById('errorMsg').classList.add('show');
         }
 
-        // NEW: always store name + color on submit (click OR Enter)
         const form = document.getElementById('loginForm');
-        form.addEventListener('submit', () => {
+
+        form.addEventListener('submit', (e) => {
+            // 1) Stop the browser's default immediate navigation
+            e.preventDefault();
+
             const nameInput = document.getElementById('name');
             const colorInput = document.getElementById('playerColor');
 
-            sessionStorage.setItem('mySessionName', nameInput.value);
-            sessionStorage.setItem('myPlayerColor', colorInput.value);
+            // 2) Save to sessionStorage synchronously
+            const nameVal = nameInput.value;
+            const colorVal = colorInput.value;
+
+            console.log('Saving to sessionStorage:', nameVal, colorVal); // debug
+            sessionStorage.setItem('mySessionName', nameVal);
+            sessionStorage.setItem('myPlayerColor', colorVal);
+
+            // 3) Now actually submit the form so the POST /login and redirect happen
+            form.submit();
         });
     </script>
 </body>

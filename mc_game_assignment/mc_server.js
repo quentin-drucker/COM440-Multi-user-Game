@@ -37,17 +37,25 @@ io.on('connection', (socket) => {
     const id = uuidv4();
     console.log("Connection established with name: " + token + " and socket id: " + socket.id + " user id: " + id);
     
-    const defaultColor = color || '#2b45c4ff';
+    const defaultColor = color || '#152da4ff';
+
+    // [NEW] Safe spawn area (stay away from the 20px edge margin)
+    const SPAWN_BUFFER = 60;           // how far from the walls to spawn
+    const minX = 20 + SPAWN_BUFFER;
+    const maxX = 800 - 20 - SPAWN_BUFFER;  // canvas width = 800
+    const minY = 20 + SPAWN_BUFFER;
+    const maxY = 600 - 20 - SPAWN_BUFFER;  // canvas height = 600
 
     players[id] = { 
-        id, 
-        x: Math.floor(Math.random() * 600), 
-        y: Math.floor(Math.random() * 400), 
+        id,
+        x: Math.floor(minX + Math.random() * (maxX - minX)), 
+        y: Math.floor(minY + Math.random() * (maxY - minY)),
         color: defaultColor,
-        name: token, 
+        name: token,
         health: 100,
         alive: true
     };
+
 
     // Send the current state and current set of players to client
     socket.emit('init', { id, players });

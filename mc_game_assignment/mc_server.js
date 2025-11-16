@@ -37,7 +37,7 @@ io.on('connection', (socket) => {
     const id = uuidv4();
     console.log("Connection established with name: " + token + " and socket id: " + socket.id + " user id: " + id);
     
-    const defaultColor = color || '#1133CC';
+    const defaultColor = color || '#2b45c4ff';
 
     players[id] = { 
         id, 

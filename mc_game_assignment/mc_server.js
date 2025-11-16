@@ -22,7 +22,7 @@ let intervalId = null;
 
 io.on('connection', (socket) => {
     console.log('In Connection');
-    const { token } = socket.handshake.auth;
+    const { token, color } = socket.handshake.auth;
     
     if (token === "_") {
         console.log("This user is not logged in - not adding.");
@@ -37,16 +37,16 @@ io.on('connection', (socket) => {
     const id = uuidv4();
     console.log("Connection established with name: " + token + " and socket id: " + socket.id + " user id: " + id);
     
-    const color = '#1133CC';
-    const color2 = '#FF1122';
+    const defaultColor = color || '#1133CC';
+
     players[id] = { 
         id, 
         x: Math.floor(Math.random() * 600), 
         y: Math.floor(Math.random() * 400), 
-        color,
+        color: defaultColor,
         name: token, 
         health: 100,
-        alive: true  // NEW: track if player is alive
+        alive: true
     };
 
     // Send the current state and current set of players to client
@@ -92,18 +92,17 @@ socket.on('hitEdge', () => {
 });
     
     // Every quarter second, broadcast an update to ALL clients
-    let counter = 0;
-
+    // let counter = 0;
     if (!intervalId) {
         intervalId = setInterval(() => {
-            for (const id in players) {
-                // REMOVED: constant health depletion
+            // for (const id in players) {
+            //     // REMOVED: constant health depletion
                 
-                if (counter++ > 3) { // toggle color periodically
-                    players[id].color = (players[id].color === color) ? color2 : color;
-                    counter = 0;
-                }
-            }
+            //     if (counter++ > 3) { // toggle color periodically
+            //         players[id].color = (players[id].color === color) ? color2 : color;
+            //         counter = 0;
+            //     }
+            // }
             io.emit('update', { players });
         }, 250);    
     }

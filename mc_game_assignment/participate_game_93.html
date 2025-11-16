@@ -10,48 +10,162 @@
         box-sizing: border-box;
     }
 
+    /* === PAGE BACKGROUND === */
+
     body { 
         font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        background: linear-gradient(135deg, #ffd700 0%, #ffed4e 50%, #9b59b6 100%);
         min-height: 100vh;
         display: flex;
         flex-direction: column;
         align-items: center;
         padding: 20px;
+        position: relative;
+        overflow: hidden;
+
+        /* Base animated gradient */
+        background:
+            linear-gradient(120deg, #2b1055, #7597de, #79caef, #533df5);
+        background-size: 300% 300%;
+        animation: arenaGradient 18s ease-in-out infinite;
     }
 
-    h1 { 
-        color: white;
-        text-align: center;
-        margin: 20px 0;
-        font-size: 2.5em;
-        text-shadow: 3px 3px 6px rgba(0, 0, 0, 0.3);
+    /* Big moving color waves */
+    @keyframes arenaGradient {
+        0%   { background-position: 0% 50%; }
+        50%  { background-position: 100% 50%; }
+        100% { background-position: 0% 50%; }
     }
+
+    /* Floating glowing blobs behind everything */
+    body::before,
+    body::after {
+        content: "";
+        position: absolute;
+        width: 450px;
+        height: 450px;
+        border-radius: 50%;
+        filter: blur(45px);
+        opacity: 0.7;
+        z-index: 0;
+    }
+
+    /* Blob 1 */
+    body::before {
+        background: radial-gradient(circle, rgba(255, 215, 0, 0.95), transparent 60%);
+        top: -120px;
+        left: -120px;
+        animation: floatBlob1 22s ease-in-out infinite alternate;
+    }
+
+    /* Blob 2 */
+    body::after {
+        background: radial-gradient(circle, rgba(155, 89, 182, 0.9), transparent 60%);
+        bottom: -150px;
+        right: -140px;
+        animation: floatBlob2 26s ease-in-out infinite alternate;
+    }
+
+    @keyframes floatBlob1 {
+        0%   { transform: translate(0, 0) scale(1); }
+        50%  { transform: translate(80px, 40px) scale(1.1); }
+        100% { transform: translate(40px, -40px) scale(0.9); }
+    }
+
+    @keyframes floatBlob2 {
+        0%   { transform: translate(0, 0) scale(1); }
+        50%  { transform: translate(-60px, -30px) scale(1.15); }
+        100% { transform: translate(-20px, 40px) scale(0.95); }
+    }
+
+    /* === TITLE AREA === */
+
+    .title-header {
+        text-align: center;
+        color: white;
+        margin: 10px 0 25px;
+        position: relative;
+        z-index: 2;
+    }
+
+    .title-badge {
+        display: inline-block;
+        padding: 4px 10px;
+        border-radius: 999px;
+        background: rgba(0, 0, 0, 0.35);
+        font-size: 0.85rem;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        margin-bottom: 8px;
+    }
+
+    .title-main {
+        font-size: 2.6rem;
+        letter-spacing: 0.06em;
+        text-shadow: 0 4px 14px rgba(0, 0, 0, 0.75);
+        margin-bottom: 6px;
+    }
+
+    /* === GAME CONTAINER + GLOW RING === */
 
     .game-container {
-        background: white;
+        position: relative;
+        background: rgba(255, 255, 255, 0.96);
         padding: 20px;
-        border-radius: 20px;
-        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        border-radius: 24px;
+        box-shadow:
+            0 18px 40px rgba(0, 0, 0, 0.45),
+            0 0 0 2px rgba(255, 255, 255, 0.2);
+        z-index: 2;
     }
 
+    /* Strong glowing aura around arena */
+    .game-container::before {
+        content: "";
+        position: absolute;
+        inset: -50px;
+        border-radius: 40px;
+        background:
+            radial-gradient(circle at 20% 30%, rgba(255, 215, 0, 0.9), transparent 60%),
+            radial-gradient(circle at 80% 70%, rgba(155, 89, 182, 0.9), transparent 60%);
+        opacity: 0.9;
+        filter: blur(35px);
+        z-index: -1;
+        animation: arenaGlow 8s ease-in-out infinite alternate;
+    }
+
+    @keyframes arenaGlow {
+        0% {
+            transform: scale(0.96);
+            opacity: 0.7;
+        }
+        100% {
+            transform: scale(1.05);
+            opacity: 1;
+        }
+    }
+
+    /* === CANVAS + CONTROLS === */
+
     canvas { 
-        background: linear-gradient(135deg, #fff9e6 0%, #f5f0ff 100%);
+        background: radial-gradient(circle at 20% 20%, #fff9e6, #f5f0ff);
         display: block;
         border: 4px solid #9b59b6;
-        border-radius: 10px;
-        box-shadow: inset 0 0 20px rgba(155, 89, 182, 0.1);
+        border-radius: 16px;
+        box-shadow:
+            inset 0 0 30px rgba(155, 89, 182, 0.25),
+            0 0 18px rgba(255, 255, 255, 0.4);
     }
 
     .controls {
         text-align: center;
-        margin-top: 15px;
+        margin-top: 12px;
         color: #333;
         font-size: 0.95em;
         background: #fff9e6;
         padding: 10px;
         border-radius: 10px;
         border: 2px solid #ffd700;
+        box-shadow: 0 6px 12px rgba(0, 0, 0, 0.12);
     }
 
     .controls strong {
@@ -60,11 +174,16 @@
   </style>
 </head>
 <body>
-    <h1>🎮 COM440 Multi-User Game 🎮</h1>
+    <header class="title-header">
+        <div class="title-badge">COM 440: Multi-user game!</div>
+        <h1 class="title-main">🎮 🆂🆄🅼🅾 Showdown 🎮</h1>
+    </header>
+
     <div class="game-container">
         <canvas id="game" width="800" height="600"></canvas>
         <div class="controls">
-            <strong>Goal:</strong> Try to knock everyone out!
+            <strong>Goal:</strong> Try to knock everyone out!      
+            <strong> Game Start: </strong> when 2+ Players log in.
         </div>
         <div class="controls">
             <strong>Controls:</strong> Press your <strong>W A S D</strong> keys to move your player.
@@ -75,10 +194,18 @@
 <script>
     const canvas = document.getElementById('game');
     const ctx = canvas.getContext('2d');
-    const msg = sessionStorage.getItem('mySessionName') || '_';
+
+    const playerName  = sessionStorage.getItem('mySessionName')  || '_';
+    const playerColor = sessionStorage.getItem('myPlayerColor') || '#1133CC'; // [NEW] (User's color pick passed from login.html)
+    console.log('Joining game as:', playerName, 'with color:', playerColor);
+
     const socket = io({
-        auth: { token: msg }
+        auth: {
+            token: playerName,
+            color: playerColor
+        }
     });
+
 
     let playerId = null;
     const players = {};

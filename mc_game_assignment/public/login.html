@@ -12,12 +12,22 @@
 
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #ffd700 0%, #ffed4e 50%, #9b59b6 100%);
+            background: linear-gradient(135deg, #ff0000, #ff9100, #08f700, #046ef8);
+            background-size: 400% 400%;
+            animation: bgMove 18s ease infinite;
             min-height: 100vh;
             display: flex;
             justify-content: center;
             align-items: center;
         }
+
+        /* NEW: animated gradient */
+        @keyframes bgMove {
+            0%   { background-position: 0% 50%; }
+            50%  { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
 
         .login-container {
             background: white;
@@ -111,7 +121,7 @@
 <body>
     <div class="login-container">
         <h1>🎮 Game Login</h1>
-        <form action="/login" method="POST">
+        <form id="loginForm" action="/login" method="POST">
             <label>
                 First Name:
                 <input type="text" id="name" name="name" required />
@@ -122,11 +132,25 @@
                 <input type="password" name="password" placeholder="Enter password" required autofocus>
             </label>
 
-            <button type="submit" onclick="
-                sessionStorage.setItem('mySessionName', document.getElementById('name').value);">
+            <!-- NEW: Color picker -->
+            <label style="color: seagreen" style="font-weight: bold;">
+                Choose Your Player Color:
+                <input type="color" id="playerColor" value="#1133CC" style="margin-top:5px;">
+            </label>
+
+            <!-- <button 
+                type="submit"
+                onclick="
+                    sessionStorage.setItem('mySessionName', document.getElementById('name').value);
+                    sessionStorage.setItem('myPlayerColor', document.getElementById('playerColor').value);
+                ">
+                Enter Game
+            </button> -->
+            <button type="submit">
                 Enter Game
             </button>
         </form>
+
         
         <p class="error-message" id="errorMsg">
             ❌ Incorrect password. Please try again.
@@ -137,6 +161,16 @@
         if (new URLSearchParams(window.location.search).has('error')) {
             document.getElementById('errorMsg').classList.add('show');
         }
+
+        // NEW: always store name + color on submit (click OR Enter)
+        const form = document.getElementById('loginForm');
+        form.addEventListener('submit', () => {
+            const nameInput = document.getElementById('name');
+            const colorInput = document.getElementById('playerColor');
+
+            sessionStorage.setItem('mySessionName', nameInput.value);
+            sessionStorage.setItem('myPlayerColor', colorInput.value);
+        });
     </script>
 </body>
 </html>

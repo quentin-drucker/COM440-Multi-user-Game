@@ -48,7 +48,7 @@ io.on('connection', (socket) => {
 
     players[id] = { 
         id,
-        x: Math.floor(minX + Math.random() * (maxX - minX)), 
+        x: Math.floor(minX + Math.random() * (maxX - minX)),
         y: Math.floor(minY + Math.random() * (maxY - minY)),
         color: defaultColor,
         name: token,

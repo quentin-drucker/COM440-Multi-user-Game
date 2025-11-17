@@ -171,14 +171,14 @@ socket.on('hitEdge', () => {
 // ========= Authentication related
 // 2) Session middleware
 app.use(session({
-    secret: process.env.SESSION_SECRET,
-    resave: false,
-    saveUninitialized: false,
-    cookie: {
-        httpOnly: true,
-        // secure: true, // enable if you serve over HTTPS
-        maxAge: 1000 * 60 * 60 // 1 hour
-    }
+  secret: process.env.SESSION_SECRET || 'k8j2h4g6f9d3s1a7q5w0e8r4t6y2u9i3o7p1',
+  resave: false,
+  saveUninitialized: false,
+  cookie: {
+    httpOnly: true,
+    // secure: true, // enable if you serve over HTTPS
+    maxAge: 1000 * 60 * 60 // 1 hour
+  }
 }));
 
 // 3) Middleware to protect routes
